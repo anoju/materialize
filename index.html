@@ -10,33 +10,146 @@
 	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 	<script src="./js/materialize.custom.js"></script>
 	<style>
-		.indicators{background:#ddd;}
+		*{margin:0;padding:0;box-sizing:border-box;}
+		#wrap{position:relative;padding-right:300px;}
+		#container{padding:20px;}
+		.section+.section{margin-top:50px;}
+		.carousel .indicators{background:#ddd;}
 		.carousel .carousel-item a{display:block;}
 		.carousel .carousel-item img{width:100%;}
+
+		#aside{position:fixed;top:0;right:0;width:280px;padding:20px;}
+		#aside li{padding:2px 0;list-style:none;}
+		#aside a{display:inline-block;font-weight:300;color:#757575;padding-left:16px;height:1.5rem;line-height:1.5rem;letter-spacing:.4;display:inline-block;text-decoration:none;}
+		#aside a:hover{color:#a8a8a8;padding-left:15px;border-left:1px solid #ee6e73;}#aside a.active{font-weight:500;padding-left:14px;border-left:2px solid #ee6e73;}
 	</style>
 </head>
 <body>
-	<div class="carousel">
-		<div class="carousel-item"><a href="#"><img src="./img/any1.jpg"></a></div>
-		<div class="carousel-item"><a href="#"><img src="./img/any2.jpg"></a></div>
-		<div class="carousel-item"><a href="#"><img src="./img/any3.jpg"></a></div>
-		<div class="carousel-item"><a href="#"><img src="./img/any4.jpg"></a></div>
-		<div class="carousel-item"><a href="#"><img src="./img/any5.jpg"></a></div>
+	<div id="wrap">
+		<section id="container">
+			<div id="carousel" class="scrollspy section">
+				<h3 class="header">carousel</h3>
+				<div class="carousel">
+					<div class="carousel-item"><a href="#"><img src="./img/any1.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/any2.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/any3.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/any4.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/any5.jpg"></a></div>
+				</div>
+				<div class="carousel">
+					<a class="carousel-item" href="#"><img src="./img/any1.jpg"></a>
+					<a class="carousel-item" href="#"><img src="./img/any2.jpg"></a>
+					<a class="carousel-item" href="#"><img src="./img/any3.jpg"></a>
+					<a class="carousel-item" href="#"><img src="./img/any4.jpg"></a>
+					<a class="carousel-item" href="#"><img src="./img/any5.jpg"></a>
+				</div>
+				<div class="carousel full">
+					<div class="carousel-item"><a href="#"><img src="./img/10-580x250.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/20-580x250.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/30-580x250.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/40-580x250.jpg"></a></div>
+					<div class="carousel-item"><a href="#"><img src="./img/90-580x250.jpg"></a></div>
+				</div>
+				
+			</div>
+
+			<div id="date-picker" class="scrollspy section">
+				<h3 class="header">datepicker</h3>
+				<div class="input-field">
+					<input type="text" class="mt_datepicker">
+				</div>
+			</div>
+
+			<div id="time-picker" class="scrollspy section">
+				<h3 class="header">timeicker</h3>
+				<div class="input-field">
+					<input type="text" class="mt_timeicker">
+				</div>
+			</div>
+
+			<div id="parallax" class="scrollspy section">
+				<h3 class="header">parallax</h3>
+				<div class="parallax-container">
+					<div class="parallax"><img src="./img/parallax1.jpg"></div>
+				</div>
+			</div>
+
+			<div id="materialbox" class="scrollspy section">
+				<h3 class="header">materialbox</h3>
+				<img class="materialboxed" width="650" src="./img/sample-1.jpg">
+			</div>
+			
+
+			<div id="Slider" class="scrollspy section">
+				<h3 class="header">Slider</h3>
+				<div class="slider">
+					<ul class="slides">
+						<li>
+							<img src="./img/10-580x250.jpg"> <!-- random image -->
+							<div class="caption center-align">
+								<h3>This is our big Tagline!</h3>
+								<h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+							</div>
+						</li>
+						<li>
+							<img src="./img/20-580x250.jpg"> <!-- random image -->
+							<div class="caption left-align">
+								<h3>Left Aligned Caption</h3>
+								<h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+							</div>
+						</li>
+						<li>
+							<img src="./img/30-580x250.jpg"> <!-- random image -->
+							<div class="caption right-align">
+								<h3>Right Aligned Caption</h3>
+								<h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+							</div>
+						</li>
+						<li>
+							<img src="./img/40-580x250.jpg"> <!-- random image -->
+							<div class="caption center-align">
+								<h3>This is our big Tagline!</h3>
+								<h5 class="light grey-text text-lighten-3">Here's our small slogan.</h5>
+							</div>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="section">
+				<br>
+				원본출처: <a href="https://materializecss.com/" target="_blank">https://materializecss.com/</a>
+				<br>
+			</div>
+
+
+		</section>
+		<aside id="aside">
+			<ul>
+				<li><a href="#carousel">carousel</a></li>
+				<li><a href="#date-picker">Date Picker</a></li>
+				<li><a href="#time-picker">Time Picker</a></li>
+				<li><a href="#parallax">parallax</a></li>
+				<li><a href="#materialbox">materialbox</a></li>
+				<li><a href="#Slider">Slider</a></li>
+			</ul>
+		</aside>
 	</div>
-	<div class="carousel">
-		<a class="carousel-item" href="#"><img src="./img/any1.jpg"></a>
-		<a class="carousel-item" href="#"><img src="./img/any2.jpg"></a>
-		<a class="carousel-item" href="#"><img src="./img/any3.jpg"></a>
-		<a class="carousel-item" href="#"><img src="./img/any4.jpg"></a>
-		<a class="carousel-item" href="#"><img src="./img/any5.jpg"></a>
-	</div>
+	
 <script>
 	$(document).ready(function(){
+		$('.scrollspy').scrollSpy();
+
 		$('.carousel').each(function(i){
 			var $this = $(this),
-				$class= 'ui-carousel-'+i;
+				$class= 'ui-carousel-'+i
+				isFull = false;
+			if($this.hasClass('full')){
+				isFull = true;
+				$this.addClass('carousel-slider');
+			}
 			$this.addClass($class);
 			$this.carousel({
+				fullWidth: isFull,
 				indicators: true,
 				onCycleTo:function(e){
 					$(e).attr('ariat-hidden',false).removeAttr('tabindex').find(':focusable').removeAttr('tabindex');
@@ -49,6 +162,22 @@
 				}
 			});
 		});
+
+		$('.mt_datepicker').datepicker({
+			//autoClose: true,
+			showMonthAfterYear: true,
+			showDaysInNextAndPreviousMonths: true,
+			format: 'yyyy.mm.dd'
+		});
+		$('.mt_timeicker').timepicker({
+			//autoClose: true,
+			//twelveHour:false
+		});
+
+		$('.materialboxed').materialbox();
+		$('.parallax').parallax();
+
+		$('.slider').slider();
 	});
 </script>
 </body>

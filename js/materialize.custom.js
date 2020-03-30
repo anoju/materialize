@@ -1168,24 +1168,15 @@ M.AutoInit = function (context) {
   var root = !!context ? context : document.body;
 
   var registry = {
-    Autocomplete: root.querySelectorAll('.autocomplete:not(.no-autoinit)'),
     Carousel: root.querySelectorAll('.carousel:not(.no-autoinit)'),
-    Chips: root.querySelectorAll('.chips:not(.no-autoinit)'),
-    Collapsible: root.querySelectorAll('.collapsible:not(.no-autoinit)'),
     Datepicker: root.querySelectorAll('.datepicker:not(.no-autoinit)'),
     Dropdown: root.querySelectorAll('.dropdown-trigger:not(.no-autoinit)'),
     Materialbox: root.querySelectorAll('.materialboxed:not(.no-autoinit)'),
-    Modal: root.querySelectorAll('.modal:not(.no-autoinit)'),
+    Modal: root.querySelectorAll('.mt-modal:not(.no-autoinit):not(.popup)'),
     Parallax: root.querySelectorAll('.parallax:not(.no-autoinit)'),
-    Pushpin: root.querySelectorAll('.pushpin:not(.no-autoinit)'),
     ScrollSpy: root.querySelectorAll('.scrollspy:not(.no-autoinit)'),
     FormSelect: root.querySelectorAll('select:not(.no-autoinit)'),
-    Sidenav: root.querySelectorAll('.sidenav:not(.no-autoinit)'),
-    Tabs: root.querySelectorAll('.tabs:not(.no-autoinit)'),
-    TapTarget: root.querySelectorAll('.tap-target:not(.no-autoinit)'),
     Timepicker: root.querySelectorAll('.timepicker:not(.no-autoinit)'),
-    Tooltip: root.querySelectorAll('.tooltipped:not(.no-autoinit)'),
-    FloatingActionButton: root.querySelectorAll('.fixed-action-btn:not(.no-autoinit)')
   };
 
   for (var pluginName in registry) {
@@ -1888,6 +1879,1096 @@ $jscomp.polyfill = function (e, r, p, m) {
   'use strict';
 
   var _defaults = {
+    alignment: 'left',
+    autoFocus: true,
+    constrainWidth: true,
+    container: null,
+    coverTrigger: true,
+    closeOnClick: true,
+    hover: false,
+    inDuration: 150,
+    outDuration: 250,
+    onOpenStart: null,
+    onOpenEnd: null,
+    onCloseStart: null,
+    onCloseEnd: null,
+    onItemClick: null
+  };
+
+  /**
+   * @class
+   */
+
+  var Dropdown = function (_Component2) {
+    _inherits(Dropdown, _Component2);
+
+    function Dropdown(el, options) {
+      _classCallCheck(this, Dropdown);
+
+      var _this9 = _possibleConstructorReturn(this, (Dropdown.__proto__ || Object.getPrototypeOf(Dropdown)).call(this, Dropdown, el, options));
+
+      _this9.el.M_Dropdown = _this9;
+      Dropdown._dropdowns.push(_this9);
+
+      _this9.id = M.getIdFromTrigger(el);
+      _this9.dropdownEl = document.getElementById(_this9.id);
+      _this9.$dropdownEl = $(_this9.dropdownEl);
+
+      /**
+       * Options for the dropdown
+       * @member Dropdown#options
+       * @prop {String} [alignment='left'] - Edge which the dropdown is aligned to
+       * @prop {Boolean} [autoFocus=true] - Automatically focus dropdown el for keyboard
+       * @prop {Boolean} [constrainWidth=true] - Constrain width to width of the button
+       * @prop {Element} container - Container element to attach dropdown to (optional)
+       * @prop {Boolean} [coverTrigger=true] - Place dropdown over trigger
+       * @prop {Boolean} [closeOnClick=true] - Close on click of dropdown item
+       * @prop {Boolean} [hover=false] - Open dropdown on hover
+       * @prop {Number} [inDuration=150] - Duration of open animation in ms
+       * @prop {Number} [outDuration=250] - Duration of close animation in ms
+       * @prop {Function} onOpenStart - Function called when dropdown starts opening
+       * @prop {Function} onOpenEnd - Function called when dropdown finishes opening
+       * @prop {Function} onCloseStart - Function called when dropdown starts closing
+       * @prop {Function} onCloseEnd - Function called when dropdown finishes closing
+       */
+      _this9.options = $.extend({}, Dropdown.defaults, options);
+
+      /**
+       * Describes open/close state of dropdown
+       * @type {Boolean}
+       */
+      _this9.isOpen = false;
+
+      /**
+       * Describes if dropdown content is scrollable
+       * @type {Boolean}
+       */
+      _this9.isScrollable = false;
+
+      /**
+       * Describes if touch moving on dropdown content
+       * @type {Boolean}
+       */
+      _this9.isTouchMoving = false;
+
+      _this9.focusedIndex = -1;
+      _this9.filterQuery = [];
+
+      // Move dropdown-content after dropdown-trigger
+      if (!!_this9.options.container) {
+        $(_this9.options.container).append(_this9.dropdownEl);
+      } else {
+        _this9.$el.after(_this9.dropdownEl);
+      }
+
+      _this9._makeDropdownFocusable();
+      _this9._resetFilterQueryBound = _this9._resetFilterQuery.bind(_this9);
+      _this9._handleDocumentClickBound = _this9._handleDocumentClick.bind(_this9);
+      _this9._handleDocumentTouchmoveBound = _this9._handleDocumentTouchmove.bind(_this9);
+      _this9._handleDropdownClickBound = _this9._handleDropdownClick.bind(_this9);
+      _this9._handleDropdownKeydownBound = _this9._handleDropdownKeydown.bind(_this9);
+      _this9._handleTriggerKeydownBound = _this9._handleTriggerKeydown.bind(_this9);
+      _this9._setupEventHandlers();
+      return _this9;
+    }
+
+    _createClass(Dropdown, [{
+      key: "destroy",
+
+
+      /**
+       * Teardown component
+       */
+      value: function destroy() {
+        this._resetDropdownStyles();
+        this._removeEventHandlers();
+        Dropdown._dropdowns.splice(Dropdown._dropdowns.indexOf(this), 1);
+        this.el.M_Dropdown = undefined;
+      }
+
+      /**
+       * Setup Event Handlers
+       */
+
+    }, {
+      key: "_setupEventHandlers",
+      value: function _setupEventHandlers() {
+        // Trigger keydown handler
+        this.el.addEventListener('keydown', this._handleTriggerKeydownBound);
+
+        // Item click handler
+        this.dropdownEl.addEventListener('click', this._handleDropdownClickBound);
+
+        // Hover event handlers
+        if (this.options.hover) {
+          this._handleMouseEnterBound = this._handleMouseEnter.bind(this);
+          this.el.addEventListener('mouseenter', this._handleMouseEnterBound);
+          this._handleMouseLeaveBound = this._handleMouseLeave.bind(this);
+          this.el.addEventListener('mouseleave', this._handleMouseLeaveBound);
+          this.dropdownEl.addEventListener('mouseleave', this._handleMouseLeaveBound);
+
+          // Click event handlers
+        } else {
+          this._handleClickBound = this._handleClick.bind(this);
+          this.el.addEventListener('click', this._handleClickBound);
+        }
+      }
+
+      /**
+       * Remove Event Handlers
+       */
+
+    }, {
+      key: "_removeEventHandlers",
+      value: function _removeEventHandlers() {
+        this.el.removeEventListener('keydown', this._handleTriggerKeydownBound);
+        this.dropdownEl.removeEventListener('click', this._handleDropdownClickBound);
+
+        if (this.options.hover) {
+          this.el.removeEventListener('mouseenter', this._handleMouseEnterBound);
+          this.el.removeEventListener('mouseleave', this._handleMouseLeaveBound);
+          this.dropdownEl.removeEventListener('mouseleave', this._handleMouseLeaveBound);
+        } else {
+          this.el.removeEventListener('click', this._handleClickBound);
+        }
+      }
+    }, {
+      key: "_setupTemporaryEventHandlers",
+      value: function _setupTemporaryEventHandlers() {
+        // Use capture phase event handler to prevent click
+        document.body.addEventListener('click', this._handleDocumentClickBound, true);
+        document.body.addEventListener('touchend', this._handleDocumentClickBound);
+        document.body.addEventListener('touchmove', this._handleDocumentTouchmoveBound);
+        this.dropdownEl.addEventListener('keydown', this._handleDropdownKeydownBound);
+      }
+    }, {
+      key: "_removeTemporaryEventHandlers",
+      value: function _removeTemporaryEventHandlers() {
+        // Use capture phase event handler to prevent click
+        document.body.removeEventListener('click', this._handleDocumentClickBound, true);
+        document.body.removeEventListener('touchend', this._handleDocumentClickBound);
+        document.body.removeEventListener('touchmove', this._handleDocumentTouchmoveBound);
+        this.dropdownEl.removeEventListener('keydown', this._handleDropdownKeydownBound);
+      }
+    }, {
+      key: "_handleClick",
+      value: function _handleClick(e) {
+        e.preventDefault();
+        this.open();
+      }
+    }, {
+      key: "_handleMouseEnter",
+      value: function _handleMouseEnter() {
+        this.open();
+      }
+    }, {
+      key: "_handleMouseLeave",
+      value: function _handleMouseLeave(e) {
+        var toEl = e.toElement || e.relatedTarget;
+        var leaveToDropdownContent = !!$(toEl).closest('.dropdown-content').length;
+        var leaveToActiveDropdownTrigger = false;
+
+        var $closestTrigger = $(toEl).closest('.dropdown-trigger');
+        if ($closestTrigger.length && !!$closestTrigger[0].M_Dropdown && $closestTrigger[0].M_Dropdown.isOpen) {
+          leaveToActiveDropdownTrigger = true;
+        }
+
+        // Close hover dropdown if mouse did not leave to either active dropdown-trigger or dropdown-content
+        if (!leaveToActiveDropdownTrigger && !leaveToDropdownContent) {
+          this.close();
+        }
+      }
+    }, {
+      key: "_handleDocumentClick",
+      value: function _handleDocumentClick(e) {
+        var _this10 = this;
+
+        var $target = $(e.target);
+        if (this.options.closeOnClick && $target.closest('.dropdown-content').length && !this.isTouchMoving) {
+          // isTouchMoving to check if scrolling on mobile.
+          setTimeout(function () {
+            _this10.close();
+          }, 0);
+        } else if ($target.closest('.dropdown-trigger').length || !$target.closest('.dropdown-content').length) {
+          setTimeout(function () {
+            _this10.close();
+          }, 0);
+        }
+        this.isTouchMoving = false;
+      }
+    }, {
+      key: "_handleTriggerKeydown",
+      value: function _handleTriggerKeydown(e) {
+        // ARROW DOWN OR ENTER WHEN SELECT IS CLOSED - open Dropdown
+        if ((e.which === M.keys.ARROW_DOWN || e.which === M.keys.ENTER) && !this.isOpen) {
+          e.preventDefault();
+          this.open();
+        }
+      }
+
+      /**
+       * Handle Document Touchmove
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleDocumentTouchmove",
+      value: function _handleDocumentTouchmove(e) {
+        var $target = $(e.target);
+        if ($target.closest('.dropdown-content').length) {
+          this.isTouchMoving = true;
+        }
+      }
+
+      /**
+       * Handle Dropdown Click
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleDropdownClick",
+      value: function _handleDropdownClick(e) {
+        // onItemClick callback
+        if (typeof this.options.onItemClick === 'function') {
+          var itemEl = $(e.target).closest('li')[0];
+          this.options.onItemClick.call(this, itemEl);
+        }
+      }
+
+      /**
+       * Handle Dropdown Keydown
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleDropdownKeydown",
+      value: function _handleDropdownKeydown(e) {
+        if (e.which === M.keys.TAB) {
+          e.preventDefault();
+          this.close();
+
+          // Navigate down dropdown list
+        } else if ((e.which === M.keys.ARROW_DOWN || e.which === M.keys.ARROW_UP) && this.isOpen) {
+          e.preventDefault();
+          var direction = e.which === M.keys.ARROW_DOWN ? 1 : -1;
+          var newFocusedIndex = this.focusedIndex;
+          var foundNewIndex = false;
+          do {
+            newFocusedIndex = newFocusedIndex + direction;
+
+            if (!!this.dropdownEl.children[newFocusedIndex] && this.dropdownEl.children[newFocusedIndex].tabIndex !== -1) {
+              foundNewIndex = true;
+              break;
+            }
+          } while (newFocusedIndex < this.dropdownEl.children.length && newFocusedIndex >= 0);
+
+          if (foundNewIndex) {
+            this.focusedIndex = newFocusedIndex;
+            this._focusFocusedItem();
+          }
+
+          // ENTER selects choice on focused item
+        } else if (e.which === M.keys.ENTER && this.isOpen) {
+          // Search for <a> and <button>
+          var focusedElement = this.dropdownEl.children[this.focusedIndex];
+          var $activatableElement = $(focusedElement).find('a, button').first();
+
+          // Click a or button tag if exists, otherwise click li tag
+          if (!!$activatableElement.length) {
+            $activatableElement[0].click();
+          } else if (!!focusedElement) {
+            focusedElement.click();
+          }
+
+          // Close dropdown on ESC
+        } else if (e.which === M.keys.ESC && this.isOpen) {
+          e.preventDefault();
+          this.close();
+        }
+
+        // CASE WHEN USER TYPE LETTERS
+        var letter = String.fromCharCode(e.which).toLowerCase(),
+            nonLetters = [9, 13, 27, 38, 40];
+        if (letter && nonLetters.indexOf(e.which) === -1) {
+          this.filterQuery.push(letter);
+
+          var string = this.filterQuery.join(''),
+              newOptionEl = $(this.dropdownEl).find('li').filter(function (el) {
+            return $(el).text().toLowerCase().indexOf(string) === 0;
+          })[0];
+
+          if (newOptionEl) {
+            this.focusedIndex = $(newOptionEl).index();
+            this._focusFocusedItem();
+          }
+        }
+
+        this.filterTimeout = setTimeout(this._resetFilterQueryBound, 1000);
+      }
+
+      /**
+       * Setup dropdown
+       */
+
+    }, {
+      key: "_resetFilterQuery",
+      value: function _resetFilterQuery() {
+        this.filterQuery = [];
+      }
+    }, {
+      key: "_resetDropdownStyles",
+      value: function _resetDropdownStyles() {
+        this.$dropdownEl.css({
+          display: '',
+          width: '',
+          height: '',
+          left: '',
+          top: '',
+          'transform-origin': '',
+          transform: '',
+          opacity: ''
+        });
+      }
+    }, {
+      key: "_makeDropdownFocusable",
+      value: function _makeDropdownFocusable() {
+        // Needed for arrow key navigation
+        this.dropdownEl.tabIndex = 0;
+
+        // Only set tabindex if it hasn't been set by user
+        $(this.dropdownEl).children().each(function (el) {
+          if (!el.getAttribute('tabindex')) {
+            el.setAttribute('tabindex', 0);
+          }
+        });
+      }
+    }, {
+      key: "_focusFocusedItem",
+      value: function _focusFocusedItem() {
+        if (this.focusedIndex >= 0 && this.focusedIndex < this.dropdownEl.children.length && this.options.autoFocus) {
+          this.dropdownEl.children[this.focusedIndex].focus();
+        }
+      }
+    }, {
+      key: "_getDropdownPosition",
+      value: function _getDropdownPosition() {
+        var offsetParentBRect = this.el.offsetParent.getBoundingClientRect();
+        var triggerBRect = this.el.getBoundingClientRect();
+        var dropdownBRect = this.dropdownEl.getBoundingClientRect();
+
+        var idealHeight = dropdownBRect.height;
+        var idealWidth = dropdownBRect.width;
+        var idealXPos = triggerBRect.left - dropdownBRect.left;
+        var idealYPos = triggerBRect.top - dropdownBRect.top;
+
+        var dropdownBounds = {
+          left: idealXPos,
+          top: idealYPos,
+          height: idealHeight,
+          width: idealWidth
+        };
+
+        // Countainer here will be closest ancestor with overflow: hidden
+        var closestOverflowParent = !!this.dropdownEl.offsetParent ? this.dropdownEl.offsetParent : this.dropdownEl.parentNode;
+
+        var alignments = M.checkPossibleAlignments(this.el, closestOverflowParent, dropdownBounds, this.options.coverTrigger ? 0 : triggerBRect.height);
+
+        var verticalAlignment = 'top';
+        var horizontalAlignment = this.options.alignment;
+        idealYPos += this.options.coverTrigger ? 0 : triggerBRect.height;
+
+        // Reset isScrollable
+        this.isScrollable = false;
+
+        if (!alignments.top) {
+          if (alignments.bottom) {
+            verticalAlignment = 'bottom';
+          } else {
+            this.isScrollable = true;
+
+            // Determine which side has most space and cutoff at correct height
+            if (alignments.spaceOnTop > alignments.spaceOnBottom) {
+              verticalAlignment = 'bottom';
+              idealHeight += alignments.spaceOnTop;
+              idealYPos -= alignments.spaceOnTop;
+            } else {
+              idealHeight += alignments.spaceOnBottom;
+            }
+          }
+        }
+
+        // If preferred horizontal alignment is possible
+        if (!alignments[horizontalAlignment]) {
+          var oppositeAlignment = horizontalAlignment === 'left' ? 'right' : 'left';
+          if (alignments[oppositeAlignment]) {
+            horizontalAlignment = oppositeAlignment;
+          } else {
+            // Determine which side has most space and cutoff at correct height
+            if (alignments.spaceOnLeft > alignments.spaceOnRight) {
+              horizontalAlignment = 'right';
+              idealWidth += alignments.spaceOnLeft;
+              idealXPos -= alignments.spaceOnLeft;
+            } else {
+              horizontalAlignment = 'left';
+              idealWidth += alignments.spaceOnRight;
+            }
+          }
+        }
+
+        if (verticalAlignment === 'bottom') {
+          idealYPos = idealYPos - dropdownBRect.height + (this.options.coverTrigger ? triggerBRect.height : 0);
+        }
+        if (horizontalAlignment === 'right') {
+          idealXPos = idealXPos - dropdownBRect.width + triggerBRect.width;
+        }
+        return {
+          x: idealXPos,
+          y: idealYPos,
+          verticalAlignment: verticalAlignment,
+          horizontalAlignment: horizontalAlignment,
+          height: idealHeight,
+          width: idealWidth
+        };
+      }
+
+      /**
+       * Animate in dropdown
+       */
+
+    }, {
+      key: "_animateIn",
+      value: function _animateIn() {
+        var _this11 = this;
+
+        anim.remove(this.dropdownEl);
+        anim({
+          targets: this.dropdownEl,
+          opacity: {
+            value: [0, 1],
+            easing: 'easeOutQuad'
+          },
+          scaleX: [0.3, 1],
+          scaleY: [0.3, 1],
+          duration: this.options.inDuration,
+          easing: 'easeOutQuint',
+          complete: function (anim) {
+            if (_this11.options.autoFocus) {
+              _this11.dropdownEl.focus();
+            }
+
+            // onOpenEnd callback
+            if (typeof _this11.options.onOpenEnd === 'function') {
+              _this11.options.onOpenEnd.call(_this11, _this11.el);
+            }
+          }
+        });
+      }
+
+      /**
+       * Animate out dropdown
+       */
+
+    }, {
+      key: "_animateOut",
+      value: function _animateOut() {
+        var _this12 = this;
+
+        anim.remove(this.dropdownEl);
+        anim({
+          targets: this.dropdownEl,
+          opacity: {
+            value: 0,
+            easing: 'easeOutQuint'
+          },
+          scaleX: 0.3,
+          scaleY: 0.3,
+          duration: this.options.outDuration,
+          easing: 'easeOutQuint',
+          complete: function (anim) {
+            _this12._resetDropdownStyles();
+
+            // onCloseEnd callback
+            if (typeof _this12.options.onCloseEnd === 'function') {
+              _this12.options.onCloseEnd.call(_this12, _this12.el);
+            }
+          }
+        });
+      }
+
+      /**
+       * Place dropdown
+       */
+
+    }, {
+      key: "_placeDropdown",
+      value: function _placeDropdown() {
+        // Set width before calculating positionInfo
+        var idealWidth = this.options.constrainWidth ? this.el.getBoundingClientRect().width : this.dropdownEl.getBoundingClientRect().width;
+        this.dropdownEl.style.width = idealWidth + 'px';
+
+        var positionInfo = this._getDropdownPosition();
+        this.dropdownEl.style.left = positionInfo.x + 'px';
+        this.dropdownEl.style.top = positionInfo.y + 'px';
+        this.dropdownEl.style.height = positionInfo.height + 'px';
+        this.dropdownEl.style.width = positionInfo.width + 'px';
+        this.dropdownEl.style.transformOrigin = (positionInfo.horizontalAlignment === 'left' ? '0' : '100%') + " " + (positionInfo.verticalAlignment === 'top' ? '0' : '100%');
+      }
+
+      /**
+       * Open Dropdown
+       */
+
+    }, {
+      key: "open",
+      value: function open() {
+        if (this.isOpen) {
+          return;
+        }
+        this.isOpen = true;
+
+        // onOpenStart callback
+        if (typeof this.options.onOpenStart === 'function') {
+          this.options.onOpenStart.call(this, this.el);
+        }
+
+        // Reset styles
+        this._resetDropdownStyles();
+        this.dropdownEl.style.display = 'block';
+
+        this._placeDropdown();
+        this._animateIn();
+        this._setupTemporaryEventHandlers();
+      }
+
+      /**
+       * Close Dropdown
+       */
+
+    }, {
+      key: "close",
+      value: function close() {
+        if (!this.isOpen) {
+          return;
+        }
+        this.isOpen = false;
+        this.focusedIndex = -1;
+
+        // onCloseStart callback
+        if (typeof this.options.onCloseStart === 'function') {
+          this.options.onCloseStart.call(this, this.el);
+        }
+
+        this._animateOut();
+        this._removeTemporaryEventHandlers();
+
+        if (this.options.autoFocus) {
+          this.el.focus();
+        }
+      }
+
+      /**
+       * Recalculate dimensions
+       */
+
+    }, {
+      key: "recalculateDimensions",
+      value: function recalculateDimensions() {
+        if (this.isOpen) {
+          this.$dropdownEl.css({
+            width: '',
+            height: '',
+            left: '',
+            top: '',
+            'transform-origin': ''
+          });
+          this._placeDropdown();
+        }
+      }
+    }], [{
+      key: "init",
+      value: function init(els, options) {
+        return _get(Dropdown.__proto__ || Object.getPrototypeOf(Dropdown), "init", this).call(this, this, els, options);
+      }
+
+      /**
+       * Get Instance
+       */
+
+    }, {
+      key: "getInstance",
+      value: function getInstance(el) {
+        var domElem = !!el.jquery ? el[0] : el;
+        return domElem.M_Dropdown;
+      }
+    }, {
+      key: "defaults",
+      get: function () {
+        return _defaults;
+      }
+    }]);
+
+    return Dropdown;
+  }(Component);
+
+  /**
+   * @static
+   * @memberof Dropdown
+   */
+
+
+  Dropdown._dropdowns = [];
+
+  M.Dropdown = Dropdown;
+
+  if (M.jQueryLoaded) {
+    M.initializeJqueryWrapper(Dropdown, 'dropdown', 'M_Dropdown');
+  }
+})(cash, M.anime);
+
+;(function ($, anim) {
+  'use strict';
+
+  var _defaults = {
+    opacity: 0.5,
+    inDuration: 250,
+    outDuration: 250,
+    onOpenStart: null,
+    onOpenEnd: null,
+    onCloseStart: null,
+    onCloseEnd: null,
+    preventScrolling: true,
+    dismissible: true,
+    startingTop: '4%',
+    endingTop: '10%'
+  };
+
+  /**
+   * @class
+   *
+   */
+
+  var Modal = function (_Component3) {
+    _inherits(Modal, _Component3);
+
+    /**
+     * Construct Modal instance and set up overlay
+     * @constructor
+     * @param {Element} el
+     * @param {Object} options
+     */
+    function Modal(el, options) {
+      _classCallCheck(this, Modal);
+
+      var _this13 = _possibleConstructorReturn(this, (Modal.__proto__ || Object.getPrototypeOf(Modal)).call(this, Modal, el, options));
+
+      _this13.el.M_Modal = _this13;
+
+      /**
+       * Options for the modal
+       * @member Modal#options
+       * @prop {Number} [opacity=0.5] - Opacity of the modal overlay
+       * @prop {Number} [inDuration=250] - Length in ms of enter transition
+       * @prop {Number} [outDuration=250] - Length in ms of exit transition
+       * @prop {Function} onOpenStart - Callback function called before modal is opened
+       * @prop {Function} onOpenEnd - Callback function called after modal is opened
+       * @prop {Function} onCloseStart - Callback function called before modal is closed
+       * @prop {Function} onCloseEnd - Callback function called after modal is closed
+       * @prop {Boolean} [dismissible=true] - Allow modal to be dismissed by keyboard or overlay click
+       * @prop {String} [startingTop='4%'] - startingTop
+       * @prop {String} [endingTop='10%'] - endingTop
+       */
+      _this13.options = $.extend({}, Modal.defaults, options);
+
+      /**
+       * Describes open/close state of modal
+       * @type {Boolean}
+       */
+      _this13.isOpen = false;
+
+      _this13.id = _this13.$el.attr('id');
+      _this13._openingTrigger = undefined;
+      _this13.$overlay = $('<div class="modal-overlay"></div>');
+      _this13.el.tabIndex = 0;
+      _this13._nthModalOpened = 0;
+
+      Modal._count++;
+      _this13._setupEventHandlers();
+      return _this13;
+    }
+
+    _createClass(Modal, [{
+      key: "destroy",
+
+
+      /**
+       * Teardown component
+       */
+      value: function destroy() {
+        Modal._count--;
+        this._removeEventHandlers();
+        this.el.removeAttribute('style');
+        this.$overlay.remove();
+        this.el.M_Modal = undefined;
+      }
+
+      /**
+       * Setup Event Handlers
+       */
+
+    }, {
+      key: "_setupEventHandlers",
+      value: function _setupEventHandlers() {
+        this._handleOverlayClickBound = this._handleOverlayClick.bind(this);
+        this._handleModalCloseClickBound = this._handleModalCloseClick.bind(this);
+
+        if (Modal._count === 1) {
+          document.body.addEventListener('click', this._handleTriggerClick);
+        }
+        this.$overlay[0].addEventListener('click', this._handleOverlayClickBound);
+        this.el.addEventListener('click', this._handleModalCloseClickBound);
+      }
+
+      /**
+       * Remove Event Handlers
+       */
+
+    }, {
+      key: "_removeEventHandlers",
+      value: function _removeEventHandlers() {
+        if (Modal._count === 0) {
+          document.body.removeEventListener('click', this._handleTriggerClick);
+        }
+        this.$overlay[0].removeEventListener('click', this._handleOverlayClickBound);
+        this.el.removeEventListener('click', this._handleModalCloseClickBound);
+      }
+
+      /**
+       * Handle Trigger Click
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleTriggerClick",
+      value: function _handleTriggerClick(e) {
+        var $trigger = $(e.target).closest('.modal-trigger');
+        if ($trigger.length) {
+          var modalId = M.getIdFromTrigger($trigger[0]);
+          var modalInstance = document.getElementById(modalId).M_Modal;
+          if (modalInstance) {
+            modalInstance.open($trigger);
+          }
+          e.preventDefault();
+        }
+      }
+
+      /**
+       * Handle Overlay Click
+       */
+
+    }, {
+      key: "_handleOverlayClick",
+      value: function _handleOverlayClick() {
+        if (this.options.dismissible) {
+          this.close();
+        }
+      }
+
+      /**
+       * Handle Modal Close Click
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleModalCloseClick",
+      value: function _handleModalCloseClick(e) {
+        var $closeTrigger = $(e.target).closest('.modal-close');
+        if ($closeTrigger.length) {
+          this.close();
+        }
+      }
+
+      /**
+       * Handle Keydown
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleKeydown",
+      value: function _handleKeydown(e) {
+        // ESC key
+        if (e.keyCode === 27 && this.options.dismissible) {
+          this.close();
+        }
+      }
+
+      /**
+       * Handle Focus
+       * @param {Event} e
+       */
+
+    }, {
+      key: "_handleFocus",
+      value: function _handleFocus(e) {
+        // Only trap focus if this modal is the last model opened (prevents loops in nested modals).
+        if (!this.el.contains(e.target) && this._nthModalOpened === Modal._modalsOpen) {
+          this.el.focus();
+        }
+      }
+
+      /**
+       * Animate in modal
+       */
+
+    }, {
+      key: "_animateIn",
+      value: function _animateIn() {
+        var _this14 = this;
+
+        // Set initial styles
+        $.extend(this.el.style, {
+          display: 'block',
+          opacity: 0
+        });
+        $.extend(this.$overlay[0].style, {
+          display: 'block',
+          opacity: 0
+        });
+
+        // Animate overlay
+        anim({
+          targets: this.$overlay[0],
+          opacity: this.options.opacity,
+          duration: this.options.inDuration,
+          easing: 'easeOutQuad'
+        });
+
+        // Define modal animation options
+        var enterAnimOptions = {
+          targets: this.el,
+          duration: this.options.inDuration,
+          easing: 'easeOutCubic',
+          // Handle modal onOpenEnd callback
+          complete: function () {
+            if (typeof _this14.options.onOpenEnd === 'function') {
+              _this14.options.onOpenEnd.call(_this14, _this14.el, _this14._openingTrigger);
+            }
+          }
+        };
+
+        // Bottom sheet animation
+        if (this.el.classList.contains('bottom-sheet')) {
+          $.extend(enterAnimOptions, {
+            bottom: 0,
+            opacity: 1
+          });
+          anim(enterAnimOptions);
+
+          // Normal modal animation
+        } else {
+          $.extend(enterAnimOptions, {
+            top: [this.options.startingTop, this.options.endingTop],
+            opacity: 1,
+            scaleX: [0.8, 1],
+            scaleY: [0.8, 1]
+          });
+          anim(enterAnimOptions);
+        }
+      }
+
+      /**
+       * Animate out modal
+       */
+
+    }, {
+      key: "_animateOut",
+      value: function _animateOut() {
+        var _this15 = this;
+
+        // Animate overlay
+        anim({
+          targets: this.$overlay[0],
+          opacity: 0,
+          duration: this.options.outDuration,
+          easing: 'easeOutQuart'
+        });
+
+        // Define modal animation options
+        var exitAnimOptions = {
+          targets: this.el,
+          duration: this.options.outDuration,
+          easing: 'easeOutCubic',
+          // Handle modal ready callback
+          complete: function () {
+            _this15.el.style.display = 'none';
+            _this15.$overlay.remove();
+
+            // Call onCloseEnd callback
+            if (typeof _this15.options.onCloseEnd === 'function') {
+              _this15.options.onCloseEnd.call(_this15, _this15.el);
+            }
+          }
+        };
+
+        // Bottom sheet animation
+        if (this.el.classList.contains('bottom-sheet')) {
+          $.extend(exitAnimOptions, {
+            bottom: '-100%',
+            opacity: 0
+          });
+          anim(exitAnimOptions);
+
+          // Normal modal animation
+        } else {
+          $.extend(exitAnimOptions, {
+            top: [this.options.endingTop, this.options.startingTop],
+            opacity: 0,
+            scaleX: 0.8,
+            scaleY: 0.8
+          });
+          anim(exitAnimOptions);
+        }
+      }
+
+      /**
+       * Open Modal
+       * @param {cash} [$trigger]
+       */
+
+    }, {
+      key: "open",
+      value: function open($trigger) {
+        if (this.isOpen) {
+          return;
+        }
+
+        this.isOpen = true;
+        Modal._modalsOpen++;
+        this._nthModalOpened = Modal._modalsOpen;
+
+        // Set Z-Index based on number of currently open modals
+        this.$overlay[0].style.zIndex = 1000 + Modal._modalsOpen * 2;
+        this.el.style.zIndex = 1000 + Modal._modalsOpen * 2 + 1;
+
+        // Set opening trigger, undefined indicates modal was opened by javascript
+        this._openingTrigger = !!$trigger ? $trigger[0] : undefined;
+
+        // onOpenStart callback
+        if (typeof this.options.onOpenStart === 'function') {
+          this.options.onOpenStart.call(this, this.el, this._openingTrigger);
+        }
+
+        if (this.options.preventScrolling) {
+          document.body.style.overflow = 'hidden';
+        }
+
+        this.el.classList.add('open');
+        this.el.insertAdjacentElement('afterend', this.$overlay[0]);
+
+        if (this.options.dismissible) {
+          this._handleKeydownBound = this._handleKeydown.bind(this);
+          this._handleFocusBound = this._handleFocus.bind(this);
+          document.addEventListener('keydown', this._handleKeydownBound);
+          document.addEventListener('focus', this._handleFocusBound, true);
+        }
+
+        anim.remove(this.el);
+        anim.remove(this.$overlay[0]);
+        this._animateIn();
+
+        // Focus modal
+        this.el.focus();
+
+        return this;
+      }
+
+      /**
+       * Close Modal
+       */
+
+    }, {
+      key: "close",
+      value: function close() {
+        if (!this.isOpen) {
+          return;
+        }
+
+        this.isOpen = false;
+        Modal._modalsOpen--;
+        this._nthModalOpened = 0;
+
+        // Call onCloseStart callback
+        if (typeof this.options.onCloseStart === 'function') {
+          this.options.onCloseStart.call(this, this.el);
+        }
+
+        this.el.classList.remove('open');
+
+        // Enable body scrolling only if there are no more modals open.
+        if (Modal._modalsOpen === 0) {
+          document.body.style.overflow = '';
+        }
+
+        if (this.options.dismissible) {
+          document.removeEventListener('keydown', this._handleKeydownBound);
+          document.removeEventListener('focus', this._handleFocusBound, true);
+        }
+
+        anim.remove(this.el);
+        anim.remove(this.$overlay[0]);
+        this._animateOut();
+        return this;
+      }
+    }], [{
+      key: "init",
+      value: function init(els, options) {
+        return _get(Modal.__proto__ || Object.getPrototypeOf(Modal), "init", this).call(this, this, els, options);
+      }
+
+      /**
+       * Get Instance
+       */
+
+    }, {
+      key: "getInstance",
+      value: function getInstance(el) {
+        var domElem = !!el.jquery ? el[0] : el;
+        return domElem.M_Modal;
+      }
+    }, {
+      key: "defaults",
+      get: function () {
+        return _defaults;
+      }
+    }]);
+
+    return Modal;
+  }(Component);
+
+  /**
+   * @static
+   * @memberof Modal
+   */
+
+
+  Modal._modalsOpen = 0;
+
+  /**
+   * @static
+   * @memberof Modal
+   */
+  Modal._count = 0;
+
+  M.Modal = Modal;
+
+  if (M.jQueryLoaded) {
+    M.initializeJqueryWrapper(Modal, 'modal', 'M_Modal');
+  }
+})(cash, M.anime);
+
+;(function ($, anim) {
+  'use strict';
+
+  var _defaults = {
     inDuration: 275,
     outDuration: 200,
     onOpenStart: null,
@@ -1940,6 +3021,10 @@ $jscomp.polyfill = function (e, r, p, m) {
       // Wrap
       _this16.$el.before(_this16.placeholder);
       _this16.placeholder.append(_this16.$el);
+      _this16.$el.attr({
+        'tabindex':1,
+        'title':'클릭시 확대해서 보기'
+      })
 
       _this16._setupEventHandlers();
       return _this16;
@@ -1991,6 +3076,7 @@ $jscomp.polyfill = function (e, r, p, m) {
     }, {
       key: "_handleMaterialboxClick",
       value: function _handleMaterialboxClick(e) {
+        console.log(e)
         // If already modal, return to original
         if (this.doneAnimating === false || this.overlayActive && this.doneAnimating) {
           this.close();
@@ -3341,16 +4427,16 @@ $jscomp.polyfill = function (e, r, p, m) {
 
     // internationalization
     i18n: {
-      cancel: 'Cancel',
-      clear: 'Clear',
-      done: 'Ok',
-      previousMonth: '‹',
-      nextMonth: '›',
-      months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-      monthsShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-      weekdays: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-      weekdaysShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-      weekdaysAbbrev: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+      cancel: '취소',
+      clear: '삭제',
+      done: '확인',
+      previousMonth: '이전달',
+      nextMonth: '다음달',
+      months: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
+      monthsShort: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
+      weekdays: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+      weekdaysShort: ['일', '월', '화', '수', '목', '금', '토'],
+      weekdaysAbbrev: ['일', '월', '화', '수', '목', '금', '토']
     },
 
     // events array
@@ -3438,7 +4524,7 @@ $jscomp.polyfill = function (e, r, p, m) {
         this._removeEventHandlers();
         this.modal.destroy();
         $(this.modalEl).remove();
-        this.destroySelects();
+        //this.destroySelects();
         this.el.M_Datepicker = undefined;
       }
     }, {
@@ -3551,8 +4637,10 @@ $jscomp.polyfill = function (e, r, p, m) {
         var day = i18n.weekdaysShort[displayDate.getDay()];
         var month = i18n.monthsShort[displayDate.getMonth()];
         var date = displayDate.getDate();
+        console.log(date.toString().length,date)
+        if(date.toString().length == 1)date = '0'+date;
         this.yearTextEl.innerHTML = displayDate.getFullYear();
-        this.dateTextEl.innerHTML = day + ", " + month + " " + date;
+        this.dateTextEl.innerHTML = month + "." + date + " " + day;
       }
 
       /**
@@ -3780,7 +4868,7 @@ $jscomp.polyfill = function (e, r, p, m) {
           arr.push('<option value="' + (year === refYear ? i - c : 12 + i - c) + '"' + (i === month ? ' selected="selected"' : '') + (isMinYear && i < opts.minMonth || isMaxYear && i > opts.maxMonth ? 'disabled="disabled"' : '') + '>' + opts.i18n.months[i] + '</option>');
         }
 
-        monthHtml = '<select class="datepicker-select orig-select-month" tabindex="-1">' + arr.join('') + '</select>';
+        monthHtml = '<select class="datepicker-select orig-select-month" tabindex="-1" title="월 선택">' + arr.join('') + '</select>';
 
         if ($.isArray(opts.yearRange)) {
           i = opts.yearRange[0];
@@ -3796,16 +4884,16 @@ $jscomp.polyfill = function (e, r, p, m) {
           }
         }
 
-        yearHtml = "<select class=\"datepicker-select orig-select-year\" tabindex=\"-1\">" + arr.join('') + "</select>";
+        yearHtml = "<select class=\"datepicker-select orig-select-year\" tabindex=\"-1\" title=\"년 선택\">" + arr.join('') + "</select>";
 
         var leftArrow = '<svg fill="#000000" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M15.41 16.09l-4.58-4.59 4.58-4.59L14 5.5l-6 6 6 6z"/><path d="M0-.5h24v24H0z" fill="none"/></svg>';
         html += "<button class=\"month-prev" + (prev ? '' : ' is-disabled') + "\" type=\"button\">" + leftArrow + "</button>";
 
         html += '<div class="selects-container">';
         if (opts.showMonthAfterYear) {
-          html += yearHtml + monthHtml;
+          html += yearHtml +'.'+ monthHtml;
         } else {
-          html += monthHtml + yearHtml;
+          html += monthHtml +'.'+ yearHtml;
         }
         html += '</div>';
 
@@ -3861,21 +4949,21 @@ $jscomp.polyfill = function (e, r, p, m) {
           html += this.renderTitle(this, c, this.calendars[c].year, this.calendars[c].month, this.calendars[0].year, randId) + this.render(this.calendars[c].year, this.calendars[c].month, randId);
         }
 
-        this.destroySelects();
+        //this.destroySelects();
 
         this.calendarEl.innerHTML = html;
 
         // Init Materialize Select
         var yearSelect = this.calendarEl.querySelector('.orig-select-year');
         var monthSelect = this.calendarEl.querySelector('.orig-select-month');
-        M.FormSelect.init(yearSelect, {
-          classes: 'select-year',
-          dropdownOptions: { container: document.body, constrainWidth: false }
-        });
-        M.FormSelect.init(monthSelect, {
-          classes: 'select-month',
-          dropdownOptions: { container: document.body, constrainWidth: false }
-        });
+        // M.FormSelect.init(yearSelect, {
+        //   classes: 'select-year',
+        //   dropdownOptions: { container: document.body, constrainWidth: false }
+        // });
+        // M.FormSelect.init(monthSelect, {
+        //   classes: 'select-month',
+        //   dropdownOptions: { container: document.body, constrainWidth: false }
+        // });
 
         // Add change handlers for select
         yearSelect.addEventListener('change', this._handleYearChange.bind(this));
@@ -4199,7 +5287,7 @@ $jscomp.polyfill = function (e, r, p, m) {
     return Datepicker;
   }(Component);
 
-  Datepicker._template = ['<div class= "modal datepicker-modal">', '<div class="modal-content datepicker-container">', '<div class="datepicker-date-display">', '<span class="year-text"></span>', '<span class="date-text"></span>', '</div>', '<div class="datepicker-calendar-container">', '<div class="datepicker-calendar"></div>', '<div class="datepicker-footer">', '<button class="btn-flat datepicker-clear waves-effect" style="visibility: hidden;" type="button"></button>', '<div class="confirmation-btns">', '<button class="btn-flat datepicker-cancel waves-effect" type="button"></button>', '<button class="btn-flat datepicker-done waves-effect" type="button"></button>', '</div>', '</div>', '</div>', '</div>', '</div>'].join('');
+  Datepicker._template = ['<div class= "mt-modal datepicker-modal">', '<div class="modal-content datepicker-container">', '<div class="datepicker-date-display">', '<span class="year-text"></span>', '<span class="date-text"></span>', '</div>', '<div class="datepicker-calendar-container">', '<div class="datepicker-calendar"></div>', '<div class="datepicker-footer">', '<button class="btn-flat datepicker-clear waves-effect" style="visibility: hidden;" type="button"></button>', '<div class="confirmation-btns">', '<button class="btn-flat datepicker-cancel waves-effect" type="button"></button>', '<button class="btn-flat datepicker-done waves-effect" type="button"></button>', '</div>', '</div>', '</div>', '</div>', '</div>'].join('');
 
   M.Datepicker = Datepicker;
 
@@ -4223,9 +5311,9 @@ $jscomp.polyfill = function (e, r, p, m) {
 
     // internationalization
     i18n: {
-      cancel: 'Cancel',
-      clear: 'Clear',
-      done: 'Ok'
+      cancel: '취소',
+      clear: '삭제',
+      done: '확인'
     },
 
     autoClose: false, // auto close when minute is selected
@@ -4836,7 +5924,7 @@ $jscomp.polyfill = function (e, r, p, m) {
     return Timepicker;
   }(Component);
 
-  Timepicker._template = ['<div class= "modal timepicker-modal">', '<div class="modal-content timepicker-container">', '<div class="timepicker-digital-display">', '<div class="timepicker-text-container">', '<div class="timepicker-display-column">', '<span class="timepicker-span-hours text-primary"></span>', ':', '<span class="timepicker-span-minutes"></span>', '</div>', '<div class="timepicker-display-column timepicker-display-am-pm">', '<div class="timepicker-span-am-pm"></div>', '</div>', '</div>', '</div>', '<div class="timepicker-analog-display">', '<div class="timepicker-plate">', '<div class="timepicker-canvas"></div>', '<div class="timepicker-dial timepicker-hours"></div>', '<div class="timepicker-dial timepicker-minutes timepicker-dial-out"></div>', '</div>', '<div class="timepicker-footer"></div>', '</div>', '</div>', '</div>'].join('');
+  Timepicker._template = ['<div class= "mt-modal timepicker-modal">', '<div class="modal-content timepicker-container">', '<div class="timepicker-digital-display">', '<div class="timepicker-text-container">', '<div class="timepicker-display-column">', '<span class="timepicker-span-hours text-primary"></span>', ':', '<span class="timepicker-span-minutes"></span>', '</div>', '<div class="timepicker-display-column timepicker-display-am-pm">', '<div class="timepicker-span-am-pm"></div>', '</div>', '</div>', '</div>', '<div class="timepicker-analog-display">', '<div class="timepicker-plate">', '<div class="timepicker-canvas"></div>', '<div class="timepicker-dial timepicker-hours"></div>', '<div class="timepicker-dial timepicker-minutes timepicker-dial-out"></div>', '</div>', '<div class="timepicker-footer"></div>', '</div>', '</div>', '</div>'].join('');
 
   M.Timepicker = Timepicker;
 
