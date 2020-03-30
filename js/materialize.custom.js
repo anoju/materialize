@@ -3109,13 +3109,13 @@ $jscomp.polyfill = function (e, r, p, m) {
         var _this43 = this;
 
         if (this.options.indicators) {
-          this.$indicators = $('<ul class="indicators"></ul>');
+          this.$indicators = $('<div class="indicators"></div>');
           this.$slides.each(function (el, index) {
-            var $indicator = $('<li class="indicator-item"></li>');
+            var $indicator = $('<button type="button" class="indicator-item">'+(index+1)+'번째 슬라이드</button>');
             _this43.$indicators.append($indicator[0]);
           });
           this.$el.append(this.$indicators[0]);
-          this.$indicators = this.$indicators.children('li.indicator-item');
+          this.$indicators = this.$indicators.children('.indicator-item');
         }
       }
 
@@ -4921,15 +4921,16 @@ $jscomp.polyfill = function (e, r, p, m) {
       }
 
       // Iterate through slides
-      _this62.$indicators = $('<ul class="indicators"></ul>');
+      _this62.$indicators = $('<div class="indicators"></div>');
       _this62.$el.find('.carousel-item').each(function (el, i) {
         _this62.images.push(el);
         if (_this62.showIndicators) {
-          var $indicator = $('<li class="indicator-item"></li>');
+          var $indicator = $('<button type="button" class="indicator-item">'+(i+1)+'번째 슬라이드</button>');
 
           // Add active to first by default.
           if (i === 0) {
             $indicator[0].classList.add('active');
+            $indicator.attr('title','현재선택');
           }
 
           _this62.$indicators.append($indicator);
@@ -5393,8 +5394,9 @@ $jscomp.polyfill = function (e, r, p, m) {
           var diff = this.center % this.count;
           var activeIndicator = this.$indicators.find('.indicator-item.active');
           if (activeIndicator.index() !== diff) {
-            activeIndicator.removeClass('active');
+            activeIndicator.removeClass('active').removeAttr('title');
             this.$indicators.find('.indicator-item').eq(diff)[0].classList.add('active');
+            this.$indicators.find('.indicator-item').eq(diff).attr('title','현재선택');
           }
         }
 
