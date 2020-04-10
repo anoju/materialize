@@ -4637,7 +4637,6 @@ $jscomp.polyfill = function (e, r, p, m) {
         var day = i18n.weekdaysShort[displayDate.getDay()];
         var month = i18n.monthsShort[displayDate.getMonth()];
         var date = displayDate.getDate();
-        console.log(date.toString().length,date)
         if(date.toString().length == 1)date = '0'+date;
         this.yearTextEl.innerHTML = displayDate.getFullYear();
         this.dateTextEl.innerHTML = month + "." + date + " " + day;
